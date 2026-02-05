@@ -4,9 +4,10 @@ import { Lock, User } from 'lucide-react';
 
 interface AuthProps {
   onLogin: (username: string) => void;
+  isDark: boolean;
 }
 
-const Auth: React.FC<AuthProps> = ({ onLogin }) => {
+const Auth: React.FC<AuthProps> = ({ onLogin, isDark }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -18,54 +19,54 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div className="p-8">
-          <div className="flex justify-center mb-6">
-            <div className="bg-indigo-600 p-3 rounded-xl shadow-lg shadow-indigo-200">
-              <Lock className="w-8 h-8 text-white" />
+    <div className={`min-h-screen flex items-center justify-center px-4 transition-colors duration-300 ${isDark ? 'bg-zinc-950' : 'bg-zinc-50'}`}>
+      <div className={`max-w-md w-full rounded-[3rem] shadow-2xl p-1 overflow-hidden transition-all ${isDark ? 'bg-zinc-900 border border-zinc-800 shadow-blue-500/5' : 'bg-white border border-zinc-100 shadow-zinc-200'}`}>
+        <div className="p-12">
+          <div className="flex justify-center mb-10">
+            <div className="bg-blue-600 p-5 rounded-3xl shadow-2xl shadow-blue-500/40">
+              <Lock className="w-10 h-10 text-white" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">Internal Access Only</h2>
-          <p className="text-center text-slate-500 mb-8">Enter your credentials to manage chemical equipment data.</p>
+          <h2 className={`text-4xl font-black text-center tracking-tighter mb-2 ${isDark ? 'text-white' : 'text-zinc-900'}`}>EquipIQ</h2>
+          <p className="text-center text-zinc-500 mb-12 font-bold uppercase tracking-[0.2em] text-[10px]">Secure Terminal Ingress</p>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Username</label>
+              <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-[0.25em] mb-3 ml-1">Identity</label>
               <div className="relative">
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  placeholder="admin"
+                  className={`w-full pl-14 pr-6 py-4.5 rounded-2xl border outline-none focus:ring-2 focus:ring-blue-600 transition-all font-bold ${isDark ? 'bg-zinc-950 border-zinc-800 text-white focus:bg-zinc-900' : 'bg-zinc-50 border-zinc-100 text-zinc-900 focus:bg-white'}`}
+                  placeholder="agent_01"
                 />
-                <User className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <User className="w-5 h-5 text-zinc-500 absolute left-5 top-1/2 -translate-y-1/2" />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Password</label>
+              <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-[0.25em] mb-3 ml-1">Access Protocol</label>
               <div className="relative">
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  className={`w-full pl-14 pr-6 py-4.5 rounded-2xl border outline-none focus:ring-2 focus:ring-blue-600 transition-all font-bold ${isDark ? 'bg-zinc-950 border-zinc-800 text-white focus:bg-zinc-900' : 'bg-zinc-50 border-zinc-100 text-zinc-900 focus:bg-white'}`}
                   placeholder="••••••••"
                 />
-                <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-5 h-5 text-zinc-500 absolute left-5 top-1/2 -translate-y-1/2" />
               </div>
             </div>
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-indigo-100 mt-4"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-blue-500/30 mt-8 active:scale-[0.98] uppercase tracking-widest text-xs"
             >
-              Sign In
+              Initiate Sync
             </button>
           </form>
           
-          <p className="mt-8 text-xs text-center text-slate-400">
-            For evaluation, use any non-empty credentials.
+          <p className="mt-12 text-[10px] text-center text-zinc-500 font-black uppercase tracking-[0.4em]">
+            Neural Encryption Active
           </p>
         </div>
       </div>

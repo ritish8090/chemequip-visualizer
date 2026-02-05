@@ -6,6 +6,11 @@ export interface Equipment {
   flowrate: number;
   pressure: number;
   temperature: number;
+  history?: {
+    flow: number[];
+    press: number[];
+    temp: number[];
+  };
 }
 
 export interface SummaryStats {
@@ -27,4 +32,23 @@ export interface DatasetHistory {
 export interface User {
   username: string;
   isAuthenticated: boolean;
+  theme?: 'light' | 'dark';
+}
+
+export interface FilterState {
+  minFlow: number;
+  maxFlow: number;
+  minPressure: number;
+  maxPressure: number;
+  pressureThreshold: number;
+  selectedTypes: string[];
+}
+
+export interface Alarm {
+  id: string;
+  timestamp: string;
+  equipmentName: string;
+  parameter: string;
+  value: number;
+  severity: 'warning' | 'critical';
 }
