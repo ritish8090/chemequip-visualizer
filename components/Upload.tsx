@@ -4,7 +4,7 @@ import { Upload as UploadIcon, FileUp, CheckCircle, AlertCircle, FileSpreadsheet
 import { mockApi } from '../services/mockApi';
 
 interface UploadProps {
-  onUploadSuccess: (filename: string, content: string) => void;
+  onUploadSuccess: (filename: string, content: string, fileBlob?: File) => void;
   isDark: boolean;
 }
 
@@ -31,7 +31,7 @@ const Upload: React.FC<UploadProps> = ({ onUploadSuccess, isDark }) => {
     reader.onload = (e) => {
       const content = e.target?.result as string;
       setTimeout(() => { 
-        onUploadSuccess(file.name, content);
+        onUploadSuccess(file.name, content, file);
         setIsUploading(false);
       }, 1000);
     };

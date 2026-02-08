@@ -8,10 +8,12 @@ import Upload from './components/Upload';
 import History from './components/History';
 import { User, DatasetHistory, FilterState, Equipment, Alarm, SummaryStats } from './types';
 import { mockApi } from './services/mockApi';
-import { FileText, Loader2, CheckCircle2, Beaker, Activity, Gauge, Thermometer, ShieldCheck } from 'lucide-react';
+import { FileText, Loader2, CheckCircle2, Beaker, Activity, Gauge, Thermometer, ShieldCheck, Wifi, WifiOff } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Pie, Scatter } from 'react-chartjs-2';
+
+const API_BASE_URL = "http://127.0.0.1:8000/api";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User>({ username: '', isAuthenticated: false, theme: 'light' });
@@ -21,6 +23,7 @@ const App: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -37,13 +40,35 @@ const App: React.FC = () => {
     selectedTypes: []
   });
 
-  useEffect(() => {
-    const loadedHistory = mockApi.getHistory();
-    setHistory(loadedHistory);
-    if (loadedHistory.length > 0) {
-      setActiveDatasetId(loadedHistory[0].id);
-      setActiveTab('dashboard');
+  const fetchHistory = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/history/`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.history && data.history.length > 0) {
+          setHistory(data.history);
+          setBackendStatus('online');
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn("Backend unreachable, using local storage fallback.");
     }
+    setBackendStatus('offline');
+    setHistory(mockApi.getHistory());
+    return false;
+  };
+
+  useEffect(() => {
+    fetchHistory().then((isOnline) => {
+      if (history.length > 0 || mockApi.getHistory().length > 0) {
+        const initialHistory = isOnline ? history : mockApi.getHistory();
+        if (initialHistory.length > 0) {
+          setActiveDatasetId(initialHistory[0].id);
+          setActiveTab('dashboard');
+        }
+      }
+    });
     
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setIsDark(true);
@@ -125,7 +150,30 @@ const App: React.FC = () => {
     setUser({ username: '', isAuthenticated: false });
   };
 
-  const handleUploadSuccess = (filename: string, content: string) => {
+  const handleUploadSuccess = async (filename: string, content: string, fileBlob?: File) => {
+    if (backendStatus === 'online' && fileBlob) {
+      try {
+        const formData = new FormData();
+        formData.append('file', fileBlob);
+        const response = await fetch(`${API_BASE_URL}/upload/`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (response.ok) {
+          const result = await response.json();
+          setHistory(prev => [result, ...prev].slice(0, 5));
+          setActiveDatasetId(result.id);
+          setActiveTab('dashboard');
+          setIsSimulating(false);
+          setAlarms([]);
+          return;
+        }
+      } catch (err) {
+        console.error("Backend upload failed, falling back to mock.", err);
+      }
+    }
+
+    // Fallback logic
     const newDataset = mockApi.processCSV(filename, content);
     setHistory(prev => [newDataset, ...prev].slice(0, 5));
     setActiveDatasetId(newDataset.id);
@@ -140,7 +188,6 @@ const App: React.FC = () => {
     setIsGeneratingPDF(true);
     
     try {
-      // Wait for charts in the hidden div to fully render
       await new Promise(resolve => setTimeout(resolve, 800));
 
       const canvas = await html2canvas(reportRef.current, {
@@ -155,7 +202,6 @@ const App: React.FC = () => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      // Basic multipage handling if height exceeds A4
       let heightLeft = pdfHeight;
       let position = 0;
       const pageHeight = 295;
@@ -204,7 +250,7 @@ const App: React.FC = () => {
               <FileText className="absolute inset-0 m-auto text-white" size={32} />
             </div>
             <h2 className="text-2xl font-black text-white mb-4 tracking-tighter uppercase text-center">Exporting Data</h2>
-            <p className="text-zinc-500 text-sm font-medium leading-relaxed">
+            <p className="text-zinc-500 text-sm font-medium leading-relaxed text-center">
               Consolidating metrics, charts, and technical logs into a structured PDF document...
             </p>
           </div>
@@ -236,14 +282,14 @@ const App: React.FC = () => {
               <div className="bg-blue-600 p-2 rounded-xl">
                 <Beaker className="text-white" size={32} />
               </div>
-              <h1 className="text-4xl font-black uppercase tracking-tighter">EquipIQ <span className="text-blue-600">Pro</span></h1>
+              <h1 className="text-4xl font-black uppercase tracking-tighter text-left">EquipIQ <span className="text-blue-600">Pro</span></h1>
             </div>
-            <p className="text-xl font-bold text-zinc-500 uppercase tracking-widest">Complete Technical Status Report</p>
+            <p className="text-xl font-bold text-zinc-500 uppercase tracking-widest text-left">Complete Technical Status Report</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Registry ID: {activeDatasetId}</p>
-            <p className="text-sm font-black text-zinc-800">{new Date().toLocaleString()}</p>
-            <p className="text-[10px] font-black text-blue-600 uppercase mt-2">Operator: {user.username}</p>
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Registry ID: {activeDatasetId}</p>
+            <p className="text-sm font-black text-zinc-800 text-right">{new Date().toLocaleString()}</p>
+            <p className="text-[10px] font-black text-blue-600 uppercase mt-2 text-right">Operator: {user.username}</p>
           </div>
         </div>
 
@@ -256,7 +302,7 @@ const App: React.FC = () => {
 
         <div className="grid grid-cols-2 gap-12 items-start">
           <div className="p-8 border border-zinc-100 rounded-3xl bg-zinc-50/30">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-8 text-zinc-400">Inventory Classification</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-8 text-zinc-400 text-left">Inventory Classification</h3>
             <div className="h-[300px]">
               <Pie 
                 data={{
@@ -272,7 +318,7 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="p-8 border border-zinc-100 rounded-3xl bg-zinc-50/30">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-8 text-zinc-400">Operational Drift Scatter</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-8 text-zinc-400 text-left">Operational Drift Scatter</h3>
             <div className="h-[300px]">
               <Scatter 
                 data={{
@@ -296,10 +342,10 @@ const App: React.FC = () => {
         <div className="space-y-6">
           <div className="flex items-center gap-3">
              <ShieldCheck className="text-blue-600" size={24} />
-             <h2 className="text-xl font-black uppercase tracking-tight">Technical Analysis Summary</h2>
+             <h2 className="text-xl font-black uppercase tracking-tight text-left">Technical Analysis Summary</h2>
           </div>
           <div className="p-10 border-l-4 border-blue-600 bg-zinc-50/50 rounded-r-3xl">
-            <p className="text-sm leading-relaxed text-zinc-700 font-medium">
+            <p className="text-sm leading-relaxed text-zinc-700 font-medium text-left">
               The dataset <span className="font-black text-zinc-900">"{activeDataset?.filename}"</span> contains {liveSummary.totalCount} monitored items. 
               The system demonstrates a mean operational flowrate of {liveSummary.avgFlowrate} L/h with a standard pressure deviation indicating {filteredData.length > 0 ? 'active' : 'idle'} telemetry states.
               Neural analysis of the distribution suggests {Object.keys(liveSummary.typeDistribution).length} unique equipment classes. 
@@ -309,25 +355,25 @@ const App: React.FC = () => {
         </div>
 
         <div>
-          <h2 className="text-xl font-black uppercase tracking-tight mb-8">Registry Log</h2>
+          <h2 className="text-xl font-black uppercase tracking-tight mb-8 text-left">Registry Log</h2>
           <table className="w-full text-left border-collapse">
             <thead className="bg-zinc-100 text-[10px] font-black uppercase tracking-widest text-zinc-500">
               <tr>
-                <th className="p-4 border border-zinc-200">Equipment</th>
-                <th className="p-4 border border-zinc-200">Class</th>
-                <th className="p-4 border border-zinc-200">Flow (L/h)</th>
-                <th className="p-4 border border-zinc-200">Press (bar)</th>
-                <th className="p-4 border border-zinc-200">Temp (°C)</th>
+                <th className="p-4 border border-zinc-200 text-left">Equipment</th>
+                <th className="p-4 border border-zinc-200 text-left">Class</th>
+                <th className="p-4 border border-zinc-200 text-left">Flow (L/h)</th>
+                <th className="p-4 border border-zinc-200 text-left">Press (bar)</th>
+                <th className="p-4 border border-zinc-200 text-left">Temp (°C)</th>
               </tr>
             </thead>
             <tbody>
               {filteredData.map(eq => (
                 <tr key={eq.id} className="text-xs font-bold border-b border-zinc-100">
-                  <td className="p-4 border border-zinc-100">{eq.name}</td>
-                  <td className="p-4 border border-zinc-100">{eq.type}</td>
-                  <td className="p-4 border border-zinc-100">{eq.flowrate}</td>
-                  <td className="p-4 border border-zinc-100">{eq.pressure}</td>
-                  <td className="p-4 border border-zinc-100">{eq.temperature}</td>
+                  <td className="p-4 border border-zinc-100 text-left">{eq.name}</td>
+                  <td className="p-4 border border-zinc-100 text-left">{eq.type}</td>
+                  <td className="p-4 border border-zinc-100 text-left">{eq.flowrate}</td>
+                  <td className="p-4 border border-zinc-100 text-left">{eq.pressure}</td>
+                  <td className="p-4 border border-zinc-100 text-left">{eq.temperature}</td>
                 </tr>
               ))}
             </tbody>
@@ -336,7 +382,7 @@ const App: React.FC = () => {
 
         <div className="mt-auto pt-10 border-t border-zinc-100 flex justify-between">
           <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">© 2025 EquipIQ Systems • Internal Security Level 4</p>
-          <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">End of Report</p>
+          <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest text-right">End of Report</p>
         </div>
       </div>
 
@@ -455,7 +501,7 @@ const App: React.FC = () => {
 
 const ReportStat = ({ label, value, unit }: { label: string, value: string | number, unit: string }) => (
   <div className="p-6 border border-zinc-100 rounded-3xl bg-zinc-50/50">
-    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">{label}</p>
+    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 text-left">{label}</p>
     <div className="flex items-baseline gap-1">
       <span className="text-3xl font-black text-zinc-900">{value}</span>
       <span className="text-xs font-bold text-zinc-400">{unit}</span>

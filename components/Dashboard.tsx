@@ -92,13 +92,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     }]
   };
 
+  // Fixed font weight with 'as const' to ensure literal types are passed to Chart.js options
   const commonOptions = {
     maintainAspectRatio: false,
     plugins: {
       legend: {
         labels: {
           color: chartColors.text,
-          font: { weight: 'bold', size: 10, family: 'Inter' },
+          font: { weight: 'bold' as const, size: 10, family: 'Inter' },
           usePointStyle: true,
           boxWidth: 6
         }
@@ -107,11 +108,11 @@ const Dashboard: React.FC<DashboardProps> = ({
     scales: {
       x: {
         grid: { color: chartColors.grid },
-        ticks: { color: chartColors.text, font: { weight: 'bold', size: 10 } }
+        ticks: { color: chartColors.text, font: { weight: 'bold' as const, size: 10 } }
       },
       y: {
         grid: { color: chartColors.grid },
-        ticks: { color: chartColors.text, font: { weight: 'bold', size: 10 } }
+        ticks: { color: chartColors.text, font: { weight: 'bold' as const, size: 10 } }
       }
     }
   };
@@ -209,7 +210,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className={`p-10 rounded-[2.5rem] border shadow-sm transition-colors ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-100'}`}>
           <h3 className={`text-[10px] font-black uppercase tracking-[0.25em] mb-10 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Fleet Mix</h3>
           <div className="h-[300px]">
-            <Pie data={pieData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: chartColors.text, font: { family: 'Inter', weight: 'bold' }, usePointStyle: true, boxWidth: 6 } } } }} />
+            {/* Using 'as const' for position and weight to fix TypeScript inference errors */}
+            <Pie data={pieData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' as const, labels: { color: chartColors.text, font: { family: 'Inter', weight: 'bold' as const }, usePointStyle: true, boxWidth: 6 } } } }} />
           </div>
         </div>
         
